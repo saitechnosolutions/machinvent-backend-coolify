@@ -168,7 +168,7 @@ const io = new Server(server, {
 
 socketHandler(io);
 
-const PORT = process.env.DB_PORT || 3000;
+const PORT = 5000;
 
 db.sequelize.sync({ alter: true })
   .then(() => {

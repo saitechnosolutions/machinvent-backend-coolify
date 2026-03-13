@@ -159,23 +159,25 @@ const db = require('./src/models/index');
 const socketHandler = require('./src/sockets/socketHandler');
 
 const server = http.createServer(app);
+
 const io = new Server(server, {
   cors: {
-    origin: '*', // ⚠️ Change for production
+    origin: '*',
   },
 });
 
-// 💡 Attach socket logic
 socketHandler(io);
 
-const PORT = 3000;
+const PORT = process.env.DB_PORT || 3000;
 
 db.sequelize.sync({ alter: true })
   .then(() => {
     console.log('✅ Database connected successfully');
-    server.listen(PORT, () => {
-      console.log(`🚀 Server running at http://localhost:${PORT}`);
+
+    server.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 Server running on port ${PORT}`);
     });
+
   })
   .catch((err) => {
     console.error('❌ Unable to connect to the database:', err);

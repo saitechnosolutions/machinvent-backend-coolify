@@ -181,6 +181,63 @@ exports.sendOtp = async (req, res) => {
   }
 };
 
+// exports.verifyOtp = async (req, res) => {
+//   const { phone, otp } = req.body;
+
+//   if (!phone || !otp) {
+//     return res.status(400).json({ error: 'Phone and OTP are required' });
+//   }
+
+//   try {
+//     const otpRecord = await db.Otp.findOne({
+//       where: { mobile_no: phone, otp: otp.toString() },
+//       order: [['createdAt', 'DESC']],
+//     });
+
+//     if (!otpRecord || new Date(otpRecord.expires_at) < new Date()) {
+//       return res.status(400).json({ message: 'Invalid or expired OTP' });
+//     }
+
+//     const user = await db.User.findOne({ where: { phone } });
+
+//     if (!user) {
+//       return res.status(404).json({ message: 'User not found' });
+//     }
+
+//     await user.update({ isOnline: true });
+
+//     // Generate tokens
+//     const accessToken = generateAccessToken(user);
+//     const refreshToken = generateRefreshToken(user);
+
+//     // Compute ban status
+//     const now = new Date();
+//     const isEffectivelyBanned =
+//       user.isBanned && (user.bannedUntil === null || new Date(user.bannedUntil) > now);
+
+//     res.json({
+//       message: 'OTP verified successfully',
+//       accessToken,
+//       refreshToken,
+//       user: {
+//         id: user.id,
+//         phone: user.phone,
+//         name: user.name,
+//         username: user.username,
+//         photo: user.photo,
+//         isProfileComplete: user.isProfileComplete,
+//         isBanned: user.isBanned,
+//         banReason: user.banReason || null,
+//         bannedUntil: user.bannedUntil ? user.bannedUntil.toISOString() : null,
+//         isEffectivelyBanned,
+//       },
+//     });
+//   } catch (err) {
+//     console.error('Verify OTP error:', err);
+//     res.status(500).json({ message: 'Failed to verify OTP', error: err.message });
+//   }
+// };
+
 exports.verifyOtp = async (req, res) => {
   const { phone, otp } = req.body;
 
@@ -189,19 +246,31 @@ exports.verifyOtp = async (req, res) => {
   }
 
   try {
-    const otpRecord = await db.Otp.findOne({
-      where: { mobile_no: phone, otp: otp.toString() },
-      order: [['createdAt', 'DESC']],
-    });
+    let user;
 
-    if (!otpRecord || new Date(otpRecord.expires_at) < new Date()) {
-      return res.status(400).json({ message: 'Invalid or expired OTP' });
-    }
+    // 🔥 Bypass condition
+    if (phone === "+919688844421" && otp === "1234") {
+      user = await db.User.findOne({ where: { phone } });
 
-    const user = await db.User.findOne({ where: { phone } });
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+    } else {
+      // Normal OTP validation
+      const otpRecord = await db.Otp.findOne({
+        where: { mobile_no: phone, otp: otp.toString() },
+        order: [['createdAt', 'DESC']],
+      });
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      if (!otpRecord || new Date(otpRecord.expires_at) < new Date()) {
+        return res.status(400).json({ message: 'Invalid or expired OTP' });
+      }
+
+      user = await db.User.findOne({ where: { phone } });
+
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
     }
 
     await user.update({ isOnline: true });
